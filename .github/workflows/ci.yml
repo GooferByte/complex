@@ -1,50 +1,47 @@
-name: CI Pipeline
+name: Multi-Container CI/CD
 
 on:
   push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+    branches:
+      - master
 
 jobs:
-  build-and-test:
+  test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-      - name: Build test image
-        run: docker build -t react-test -f ./client/Dockerfile.dev ./client
+      - name: Build test image and run tests
+        run: |
+          docker build -t gooferbyte/react-test -f ./client/Dockerfile.dev ./client
+          docker run -e CI=true gooferbyte/react-test npm test
 
-      - name: Run tests (CI=true)
-        run: docker run -e CI=true react-test npm test
-
-      - name: Run tests with coverage
-        run: docker run react-test npm test -- --coverage
-
-  build-images:
-    needs: build-and-test
+  build-and-deploy:
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
+      - name: Log in to DockerHub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      - name: Build client image
-        run: docker build -t gooferbyte/multi-client ./client
+      - name: Build Docker images
+        run: |
+          docker build -t gooferbyte/multi-client ./client
+          docker build -t gooferbyte/multi-nginx ./nginx
+          docker build -t gooferbyte/multi-server ./server
+          docker build -t gooferbyte/multi-worker ./worker
 
-      - name: Build nginx image
-        run: docker build -t gooferbyte/multi-nginx ./nginx
-
-      - name: Build server image
-        run: docker build -t gooferbyte/multi-server ./server
-
-      - name: Build worker image
-        run: docker build -t gooferbyte/multi-worker ./worker
+      - name: Push Docker images
+        run: |
+          docker push gooferbyte/multi-client
+          docker push gooferbyte/multi-nginx
+          docker push gooferbyte/multi-server
+          docker push gooferbyte/multi-worker
