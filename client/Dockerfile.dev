@@ -1,9 +1,9 @@
 FROM node:16-alpine
 
-WORKDIR '/app'
+WORKDIR /app
 
 # Only copy package.json first for caching layer
-COPY ./package.json ./
+COPY package*.json ./
 
 RUN npm install
 
@@ -13,5 +13,5 @@ COPY . .
 # Set environment explicitly
 ENV CI=true
 
-# Command to run tests (for CI like GitHub Actions)
-CMD ["npm", "test", "--", "--watchAll=false"]
+# Use this CMD to run tests once in CI
+CMD ["npm", "run", "test", "--", "--watchAll=false"]
