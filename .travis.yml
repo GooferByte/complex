@@ -15,3 +15,10 @@ after_success:
  - docker build -t gooferbyte/multi-nginx ./nginx
  - docker build -t gooferbyte/multi-server ./server
  - docker build -t gooferbyte/multi-worker ./worker
+#Login to the docker CLI
+ - echo "$DOCKER_PASSWORD" | docker login -u
+#take those images and push them to Docker-Hub
+ - docker push gooferbyte/multi-client
+ - docker push gooferbyte/multi-nginx
+ - docker push gooferbyte/multi-server
+ - docker push gooferbyte/multi-worker
